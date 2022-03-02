@@ -1,1 +1,3 @@
-
+Mushroom EDA.ipybn : notebook pour concaténer les données des images et fichiers json ("image_and_json_data.csv") + première exploration des données
+Build new database.ipynb : notebook pour créer un fichier csv de debug ("image_and_json_data_DEBUG.csv") avec seulement les données des années 2006 et 2007; top10 des familles
+Build mushroom dataset for ML.ipynb : notebook pour un premier modèle de ML avec un RandomForestClassifier
