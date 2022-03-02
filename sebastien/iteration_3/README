@@ -1,1 +1,4 @@
-
+[DRIVE] Best DL model training with optuna param.ipynb : illustration résultats DL avec MobileNetV3Large sur environ 36000 images
+[DRIVE] DL Model optimization with optuna + datagen.ipynb : DL; Optuna sur 3 modèles (EfficientNetB0, EfficientNetB1 et MobileNetV3Large) avec 5000 images
+[DRIVE] DL Model optimization with optuna.ipynb : DL; Optuna sur 3 modèles (EfficientNetB0, EfficientNetB1 et MobileNetV3Large) avec 5000 images
+[DRIVE] DL models comparison.ipynb : DL; comparaison de 12 modèles sur 5000 images
