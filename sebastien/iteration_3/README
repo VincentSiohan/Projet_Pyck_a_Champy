@@ -1,4 +1,37 @@
-[DRIVE] Best DL model training with optuna param.ipynb : illustration résultats DL avec MobileNetV3Large sur environ 36000 images
-[DRIVE] DL Model optimization with optuna + datagen.ipynb : DL; Optuna sur 3 modèles (EfficientNetB0, EfficientNetB1 et MobileNetV3Large) avec 5000 images
-[DRIVE] DL Model optimization with optuna.ipynb : DL; Optuna sur 3 modèles (EfficientNetB0, EfficientNetB1 et MobileNetV3Large) avec 5000 images
-[DRIVE] DL models comparison.ipynb : DL; comparaison de 12 modèles sur 5000 images
+# Notebooks description
+- [DRIVE] DL models comparison.ipynb : comparaison de différents models avec transfer learning pour choix des plus prometteurs (en limitant à 5k images avec 7 familles)
+- [DRIVE] DL Model optimization with optuna.ipynb: optimisation de l'architecture du classifier (nombre de neurones, couches et dropout rate) pour les modèles identifiés préalablement
+(en limitant à 5k images avec 7 familles)
+- [DRIVE] Best DL model training with optuna param: training sur le dataset complet en utilisant les paramètres trouvés sur 5k images avec optuna
+- [DRIVE] DL Model optimization with optuna + datagen : tentative avec datagen inside optuna objective function, mais pas d'improvement et very time consuming
+
+
+# Main conclusions: 
+
+## Experiments (with 5000 images)
+### EFB1 without Datagenerator nor callbacks : 
+  * train/val acc=0.81/0.60 in 10 epochs in 3.2 minutes with model EFB1 in folder 220131_08H56
+###  with Datagen & callbacks
+  * train/val acc=0.57/0.57 in 7 epochs in 9.2 minutes with model EFB1 in folder 220131_09H03
+=> Pas d'avantage évident à ajouter datagen 
+
+###  Implementation optuna
+  * EFB1:
+    * train/val acc=0.78/0.61 in 10 epochs in 3.3 minutes with model EFB1 in folder 220201_09H39
+  * MobileNetV3Large:
+    * train/val acc=0.9/0.62 in 10 epochs in 2.8 minutes with model MobileNetV3Large in folder 220201_11H44
+  * EFB0:
+    * train/val acc=0.71/0.6 in 10 epochs in 3.1 minutes with model EFB0 in folder 220201_11H44
+
+### Implementation datagen dans objecive function optuna**
+  * EFB1:
+    ** train/val acc=0.76/0.6 in 10 epochs in 11.8 minutes with model EFB1 in folder 220202_06H33
+
+**=> pas d'avantage à utiliser datagen**
+
+## Experiments (with all images) 
+* Optuna sur EFB1:
+  * train/val acc=0.85/0.69 in 10 epochs in 21.8 minutes with model EFB1 in folder 220201_15H05
+
+**  => no improvement vs recherche des best param à 5k puis training avec tout le dataset**
+
