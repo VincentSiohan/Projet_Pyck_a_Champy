@@ -1,1 +1,64 @@
+# TL,DR
+* Best model: **train/val/test acc = 0.98/0.79/0.79 - f1 = 0.79** in folder 220207_09H59 in 132.0 min (cf **notebook Best EFB1 model on all images_freeze at start + fine tuning**) /!\très long/!\ 
+    * idem sans datagen : train/val/test acc = 0.99/0.78/0.79 - f1 = 0.79 in folder 220207_15H08/ in 76.0 min ==> Faible interet datagen 
 
+# Notebooks
+## On all images 
+* [DRIVE] Autogluon classification : Reference autogluon 2H - 7 familles - all images => 0.70 accuracy on test set
+* [DRIVE] Best EFB1 model on all images_unfreeze at start .ipynb: Comparaison du top3 des modèles sélectionnés via optuna sur toutes les images (7 familles), puis selection du meilleur modèle ==> test_acc = 0.76
+* [DRIVE] Best EFB1 model on all images_freeze at start + fine tuning : Nouvelle comparaison en essayant une approche transfer learning (avec datagen) avec freeze at start jusqu'à convergence + defreeze pour fine tuning (les 3 meilleurs modèles ont été préselectionnés via optuna avec la même approche) : test acc = 0.79
+* [Colab] Best EFB1 with partial unfreeze and exponential lr decrease : Tentative de limiter l'overfit en réduisant le nombre de couches dégelèes et en ajoutant une decroissance exponentielle du lr (optimisés avec Optuna): Overfit réduit mais test acc = 0.75
+## On 5k images for hyperparameter tuning 
+* [DRIVE] DL Model optimization with optuna + unfreeze base model: Rechercher hyperparam optimaux (learning rate, batch size, claissifier architecture) with optuna => 0.63 sur 5k images
+* [DRIVE] DL Model optimization on 5k images_transfer learning + fine tuning with FC classifier: Exemple d'utilisation d'optuna pour tenter de limiter l'overfit lors de l'unfreeze du réseau de neurone en jouant sur nombre de step à defreeze, lrscheduler, ...
+* [DRIVE]  DL model optimization on 5k images: différent lr profiles with FC architecture & unfreeze at start: Tentative avec différents profiles lr avec unfreeze at start
+* [Colab] LRfinder for EFB1 (freeze at start) on 5k images : check lr optimal avec autre methode que optuna
+
+# EXPERIMENT LOGS 
+* Autogluon classification : Reference autogluon 2H - 7 familles - all images => **0.70 accuracy on test set**
+# Experiments (mainly with 5000 images)
+## Fully connected layer architecture 
+* jusqu'ici max val acc avec 4k training = 0.62 et 0.7 all images 7 familles
+* Split en 3 datasetq Train 3200 , val 800, test 1000 + defreeze du base model dans optnuna:
+  * NOK si on initialise les coefs de façon random
+  * acc > 0.644 sur valid set avec defreeze + initialisation imagnet, mais pas pu évaluer jusqu'au test set car plantage (dossier DEEP LEARNING/220202_14H18)
+* Relance avec unfreeze always = True + change pruner optuna (medianpruner -> HyperbandPruner)
+  * train/val/test acc=0.95/0.62 in 8 epochs in 12.0 minutes with model EFB1 in folder 220203_12H29
+* [A] Limitation interval recherche optuna lr (1e-5, 1e-3) vs (1e-5, 1e-2) & batchsize (8,32) vs (8,64) since most important param
+  * train/val/test acc=0.93/0.63 in 8 epochs in 11.0 minutes with model EFB1 in folder 220203_17H07
+  * En  comparant le top3 des modèles sur toutes les images puis en sélectionnant le meilleur:
+    * **train/val/test acc = 0.98/0.76/0.76 - f1 = 0.76 in folder 220207_06H35/ in time to fit cf notebook Best EFB1 model on all images_unfreeze at start**
+  * sur 5 familles pour comparaison anciens élèves (0.77 cf  https://github.com/thibaultkaczmarek/MushPy/blob/main/models/iteration_2/20210622_model_effnet-datagenerator_unfreeze_GPU_colab_initial.ipynb):
+      * train/val acc=1.0/0.82 in 11 epochs in 190.7 minutes with model EFB1 in folder 220204_19H07
+* Ajout dropout (trial.suggest_discrete_uniform('dropout_rate_global_avg', 0.0, 0.5,0.05)) post global average pour tenter de limiter l'overfit
+  * train/val/test acc=0.93/0.64 in 10 epochs in 14.9 minutes with model EFB1 in folder 220204_11H35
+* Set batchsize à 16 car c'est celui qui revient le plus souvent dans les bst params
+  * train/val/test acc=0.88/0.62 in 8 epochs in 11.2 minutes with model EFB1 in folder 220204_15H46
+* back to [A] en fixant architecture à 2 couples de couches dense/dropout et en laissant libre dropout / units number / lr + augmentant dropout up to 0.8 et en entrainant en 2 temps (base layer freeze jusqu'à overfit puis defreeze sur 10 epoch cf https://www.tensorflow.org/guide/keras/transfer_learning ) pour limiter overfit quand on laisse tout le réseau trainable dès le début:
+  * train/val/test acc=1.0/0.66 in 10 epochs in 8.7 minutes with model EFB1 in folder 220205_16H14 
+  * Mais overfit quand même et résultats moins bons sur toutes les images => 0.71
+* [B]Test avec Datagen light [flip horizontal et vertical + random rotation 0.1) sans freeze initial:
+  * train/val/test acc = 0.94/0.65/0.64 - f1 = 0.64 in folder 220206_13H54/ in time to fit
+* On continue dans cette voie en fixant 1024 et 512 units et en laissant libre dropout et parametre de l'image gen (zoom_range et  rotation_range=trial.suggest_discrete_uniform('rotation_range', 0.0,0.2,0.1) // Flip horizontal et vertical = True): 
+  * train/val/test acc = 0.91/0.65/0.64 - f1 = 0.64 in folder 220206_17H06/ in 739.0879814624786 s
+  * ==> Pas vraiment d'interet 
+* back to [B] avec two step training avec callback plus agressif pour premiere step pour arréter training dès premières epochs (adjust early stopping/lr scheduler 2nd step (patience réduite à 3/2 vs 4/3)
+   * **train/val/test acc = 0.96/0.67/0.66 - f1 = 0.66 in folder 220207_06H35**
+  * => test top3 sur toutes les images avec ces conditions:
+    * **train/val/test acc = 0.98/0.79/0.79 - f1 = 0.79** in folder 220207_09H59 in 132.0 min (cf **notebook Best EFB1 model on all images_freeze at start + fine tuning**) /!\très long/!\ 
+    * idem sans datagen : train/val/test acc = 0.99/0.78/0.79 - f1 = 0.79 in folder 220207_15H08/ in 76.0 min ==> Faible interet datagen 
+* Tentative de limiter overfit avec ces conditions en jouant sur nombre de couches unfreeze, lr 2nd step et lrscheduler:
+  * **train/val/test acc = 0.84/0.63/0.65 - f1 = 0.65 in folder 220209_12H44/ in 203.0 s cf notebook [DRIVE] DL Model optimization on 5k images_transfer learning + fine tuning with FC classifier**
+  * Essai sur toutes les images pas concluant :train/val/test acc = 0.98/0.77/0.78 - f1 = 0.78 in folder 220209_19H10/
+* Essais en appliquant différent profiles lr (cf https://colab.research.google.com/notebooks/tpu.ipynb#scrollTo=Zs2tsV8xebhU) avec architecture FC et unfreeze at start mais non concluant: Best trial is number 5: score 0.574999988079071 cf [DRIVE]  DL model optimization on 5k images: différent lr profiles with FC architecture & unfreeze at start .ipynb
+
+   
+## Global average only 
+* essai avec global average only en 2 steps + variable lr & batch size  + adjust early stopping/lr scheduler 2nd step (patience réduite à 3/2 vs 4/3)
+  * pas allé jusqu'au bout mais semble prometteur car overfit largement réduit à la fin de la 1st step CF dossier 220207_09H55 
+    * Trial 6 finished with value: 0.6692708134651184 and parameters: {'batch_size': 64, 'lr': 0.00020683296920499643}. Best is trial 6 with value: 0.6692708134651184. -  **train/val/test acc = 0.9769/0.67/0.68**
+    * trial 7 pas mal aussi {'batch_size': 32, 'lr': 8.7e-5} test acc = 0.68 
+* test avec btach size 64 - lr initial 2e-4 puis lr schdeuler 2nd step mais plantage memoire 
+* 2nd step optimisiation test en fixant 1step avec {'batch_size': 32, 'lr': 8.7e-5} et en arretant datagen pour gagner du temps:
+    * step decay avec: decay_rate = trial.suggest_discrete_uniform('decay_rate', 0.3,0.7,0.1) //  drop_period= trial.suggest_discrete_uniform('drop_period', 1,4,1) 
+* Rien de concluant quand on lance sur le dataset complet (test acc de l'ordre de 0.75)
